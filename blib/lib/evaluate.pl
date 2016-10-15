@@ -18,11 +18,69 @@ BEGIN{
 no warnings 'experimental';
 
 sub evaluate {
-	my $rpn = shift;
 
-	# ...
+	my @stack = ();
+    my $temp = shift;
+	my @token = @{$temp};
+	my $res;
+	for (@token)
+	{
+		if ($_ eq "U-") {
+			my $x = pop(@stack);
+			push(@stack, -$x);
+        }
+		elsif ($_ eq "U+") {
+			my $x = pop(@stack);
+			if ($x<0) {
+			push(@stack, -$x);
+			}
+			else{
+				push(@stack, $x);
+			}
+        }
+		elsif ($_ =~ /[\+\-\*\/\^]/)
+		{
+			if (scalar(@stack) < 2)
+				{
+					print "îøèáêà";
+				}
+			my $x = pop(@stack);
+			my $y = pop(@stack);
+			if ($_ eq '*')
+			{
+				$res = $y*$x;
+			}
+			elsif($_ eq '/')
+			{
+				$res = $y/$x;
+			}
+			elsif($_ eq '+')
+			{
+				$res = $y+$x;
+			}
+			elsif($_ eq '-')
+			{
+				$res = $y-$x;
+			}
+			elsif($_ eq '^')
+			{
+				$res = $y**$x;
+			}
+			push(@stack, $res);
+		} elsif ($_ =~ /[0-9]/)
+		{
+			push(@stack, $_);
+		} else
+		{
+			print "íåäîïóñòèìûé ñèìâîë";
+		}
 
-	return 0;
+	}
+	if (scalar(@stack) > 1)
+	{
+		print("Êîëè÷åñòâî îïåðàòîðîâ íå ñîîòâåòñòâóåò êîëè÷åñòâó îïåðàíäîâ");
+	}
+	return pop(@stack);
 }
 
 1;

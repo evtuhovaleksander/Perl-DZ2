@@ -1,4 +1,3 @@
-
 =head1 DESCRIPTION
 
 Эта функция должна принять на вход ссылку на массив, который представляет из себя обратную польскую нотацию,
@@ -10,83 +9,77 @@ use 5.010;
 use strict;
 use warnings;
 use diagnostics;
-use DDP;
-
-BEGIN {
-    if ( $] < 5.018 ) {
-
-        package experimental;
-        use warnings::register;
-    }
+BEGIN{
+	if ($] < 5.018) {
+		package experimental;
+		use warnings::register;
+	}
 }
 no warnings 'experimental';
 
 sub evaluate {
-    my $rpn   = shift;
-    my @stack = ();
-    my @token = @{$rpn};
-	# print @token;
 
-    my $res;
-    for (@token) {
-		given ($_) {
-	        when ( $_ eq "U-" ) {
-	            my $x = pop(@stack);
-	            push( @stack, -$x );
-	        }
-	        when ( $_ eq "U+" ) {
-	            my $x = pop(@stack);
-	            push( @stack, $x );
-	        }
-	        when ( $_ =~ /[\+\-\*\/\^]/ ) {
-	            if ( scalar(@stack) < 2 ) {
-	                die 'NaN';
-					exit;
-	            }
-	            my $x = pop(@stack);
-	            my $y = pop(@stack);
-	            given ($_) {
-				    when ( $_ eq '*' ) {
-			            $res = $y * $x;
-			        }
-			        when ( $_ eq '/' ) {
-			            $res = $y / $x;
-			        }
-			        when ( $_ eq '+' ) {
-			            $res = $y + $x;
-			        }
-			        when ( $_ eq '-' ) {
-			            $res = $y - $x;
-			        }
-			        when ( $_ eq '^' ) {
-			            $res = $y ** $x;
-			        }
-					default {
-						die 'NaN';
-						exit;
-					}
-			    }
+	my @stack = ();
+    my $temp = shift;
+	my @token = @{$temp};
+	my $res;
+	for (@token)
+	{
+		if ($_ eq "U-") {
+			my $x = pop(@stack);
+			push(@stack, -$x);
+        }
+		elsif ($_ eq "U+") {
+			my $x = pop(@stack);
+			if ($x<0) {
+			push(@stack, -$x);
+			}
+			else{
+				push(@stack, $x);
+			}
+        }
+		elsif ($_ =~ /[\+\-\*\/\^]/)
+		{
+			if (scalar(@stack) < 2)
+				{
+					print "îøèáêà";
+				}
+			my $x = pop(@stack);
+			my $y = pop(@stack);
+			if ($_ eq '*')
+			{
+				$res = $y*$x;
+			}
+			elsif($_ eq '/')
+			{
+				$res = $y/$x;
+			}
+			elsif($_ eq '+')
+			{
+				$res = $y+$x;
+			}
+			elsif($_ eq '-')
+			{
+				$res = $y-$x;
+			}
+			elsif($_ eq '^')
+			{
+				$res = $y**$x;
+			}
+			push(@stack, $res);
+		} elsif ($_ =~ /[0-9]/)
+		{
+			push(@stack, $_);
+		} else
+		{
+			print "íåäîïóñòèìûé ñèìâîë";
+		}
 
-	            push( @stack, $res );
-	        }
-	        when ( $_ =~ /[0-9]/ ) {
-	            push( @stack, $_ );
-	        }
-	        default {
-	            die 'NaN';
-				exit;
-	        }
-	    }
-		# p $stack[-1];
 	}
-    if ( (@stack > 1) or (!($stack[-1]))) ) {
-        die 'NaN';
-		exit;
-    }
-    # print( pop(@stack) );
-	# my $t = pop(@stack);
-	# p $t;
-    # return pop(@stack);
+	if (scalar(@stack) > 1)
+	{
+		print("Êîëè÷åñòâî îïåðàòîðîâ íå ñîîòâåòñòâóåò êîëè÷åñòâó îïåðàíäîâ");
+	}
 	return pop(@stack);
 }
 

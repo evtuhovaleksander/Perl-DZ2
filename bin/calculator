@@ -3,8 +3,6 @@
 use 5.010;  # for say, given/when
 use strict;
 use warnings;
-use DDP;
-
 BEGIN{
 	if ($] < 5.018) {
 		package experimental;
@@ -28,7 +26,6 @@ while (my $expression = <>) {
 	next if $expression =~ /^\s*$/;
 
 	eval {
-		p $expression;
 		my $rpn = rpn($expression);
 		my $value = evaluate($rpn);
 		print join(" ",@$rpn)."\n";

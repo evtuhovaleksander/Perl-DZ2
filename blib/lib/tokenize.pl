@@ -1,4 +1,3 @@
-
 =head1 DESCRIPTION
 
 Эта функция должна принять на вход арифметическое выражение,
@@ -18,72 +17,120 @@ use 5.010;
 use strict;
 use warnings;
 use diagnostics;
-
-BEGIN {
-    if ( $] < 5.018 ) {
-
-        package experimental;
-        use warnings::register;
-    }
+BEGIN{
+	if ($] < 5.018) {
+		package experimental;
+		use warnings::register;
+	}
 }
 no warnings 'experimental';
 
 sub tokenize {
-    chomp( my $expr = shift );
-    my @source = grep ( !m/^(\s*|)$/, split m{
-            (
-                (?<!e) [+-]
-                |
-                [*()/^]
-                |
-                \s+
-            )
-        }x, $expr );
-    my @result;
+	chomp(my $expr = shift);
+  if ($expr eq "--") {
+  	return "NAN";
+  }
 
-    my $parenthes = 0;
-    my $operators = 0;
-    my $numbers = 0;
-    my $previous = "";
-    my $previous_type = "";
+  $expr=" ".$expr." ";
 
-    for (@source) {
-        if ( $_ =~ m/^[-+]$/ and $previous =~ m/^((\(|\s|)|([\+\-\/\*\(]))$/ ) {
-            $previous_type = "unary operator";
-            push( @result, "U" . $_ );
+	#âîçìîæíûå ïîäñòàíîâêè óíàðíûõ îïåðàòîðîâ -
+	#*-
+	#+-
+	#/-
+	#^-
+	#(-
+	#begin-
+	#$expr=~s/\+\-/\+#/;
+
+	#âîçìîæíûå ïîäñòàíîâêè óíàðíûõ îïåðàòîðîâ +
+	#*+
+	#/+
+	#^+
+	#-+
+	#(+
+	#begin+
+	#$expr=~s/\+\-/\+#/;
+
+	# äî ëàñòà ìåíÿåì ++ íà + è -- íà +
+	#while ($expr =~ /\+\+/ ) {
+    #    $expr =~ s/\+\+/\+/;
+    #}
+
+	#	while ($expr =~ /\-\-/ ) {
+    #    $expr =~ s/\-\-/\+/;
+    #}
+
+
+	# ïðîâåðêà íà òðîéíîé îïåðàòîð è / èëè çàïðåùåííûå êîìáèíàöèè èç 3õ îïåðàòîðîâ
+
+
+
+
+	my @temp = split//, $expr;
+	my @res;
+	my $str_temp = "";
+	my $flag = 0;
+	my $flag_e = 0;
+	my $flag_was_dot=0;
+  my $flag_was_e=0;
+	my $lastop="";
+	for (@temp){
+		if ($_ eq " ") { #êîíåö òîêåíà ïîñëå ïðîáåëà
+			if ($flag) { # åñòü îáðàáàòûâåìûé òîêåí
+				push(@res,$str_temp); # òîêåí ñðîêó ïóøèì
+				$str_temp = ""; # îáíóëÿåì òîêå ñòðîêó
+            }
+			$flag = 0;
+			$flag_e = 0;
+			$flag_was_dot=0;
+			my $flag_was_e=0; # áðîñàåì ôëàãè
         }
-        elsif ( $_ =~ m/^\d+$/ ) {
-            $numbers += 1;
-            $previous_type = "number";
-            push( @result, "" . $_ )
-        }
-        elsif ( $_ =~ m/(\d*\.?\d+(e?[-+]?\d+)|(\d+))/ ) {
-            $numbers += 1;
-            $previous_type = "number";
-            push( @result,  sprintf("%g", $_) );
-        }
-        else {
-            $previous_type = ( $_ =~ m/^([\+\-\*\/\^])$/ ? "operator" : "parenthes" );
-            $operators += ( $_ =~ m/^([\+\-\*\/\^])$/ ? 1 : 0 );
-            $parenthes += ( $_ =~ m/^\($/ ? 1 : ( $_ =~ m/^\)$/ ? -1 : 0 ) );
-            push( @result, $_ );
-        }
-        $previous = $_;
-    }
+		elsif($_ =~ /[0-9\.e]/){ # åñëè ñèìâîë èç ïåðå÷èñëåíèÿ
+			if ($_ eq "e") { # åñëè å
+								if($flag_e&&$flag_was_e){return \();}
+                $flag_e = 1;
+								$flag_was_e=1; # ôëàã áûëî å â 1
+            }
+			elsif($_ =~ /[0-9]/) {$flag_e =0;}
+			if(($_ eq ".")&&$flag_was_dot)
+			{
+				return \();
+				#"double dot token"; print "double dot token";
+			}
+			if (($_ eq ".")&&!$flag_was_dot) {
+                $flag_was_dot=1;
+            }
+		#	if(($_ eq "/.")&&$flag_was_dot){print "double dot token"; }
 
-    if ( !$numbers ) {
-        die "Ты пидор";
-    }
+			$flag = 1; # íà÷àëî òîêåíà â 1
+			$str_temp.=$_; # ïóøèì â áóôåð òîêåíà ñèìâîë
+		}
+		elsif($_ =~ /[\+\-\*\/\^\(\)# ]/){ # åñëè îïåðàòîð
+			if ($flag_e&&(($_ eq "+")||($_ eq "-"))) { # åñëè ïîñëå å èäåò ïëþñ
+                $str_temp.=$_; # ïóøèì â òîêåí
+				$flag_e = 0; # íóëèì ôëàã áûëî å
+            }
+			else{
+				if ($flag) { # åñëè ïðîñòî áûë òîêåí
+				push(@res,$str_temp); # çàâåðøàåì òîêå è ïóøèì â ðåçðîëò
+				$str_temp = ""; # íóëèì
+				$flag = 0; # íóëèì
+				 $flag_was_dot=0;
+				}
+				push(@res,$_);
 
-    if ( $parenthes ) {
-        die "Ты пидор!";
-    }
+			}
+		}
+	}
 
-    if (!($numbers == $operators + 1)) {
-        die "Ты ебанутый?"
-    };
+   	for(@res){
+        	if ($_ =~ /[\.e]/){
+			$_ = 0+$_;  # åñëè òîêåí âèäà .5 òî ïëþóåì ê íà÷àëó 0
+        	}
+    	}
 
-    return \@result;
+
+	return \@res;
 }
 
 1;
